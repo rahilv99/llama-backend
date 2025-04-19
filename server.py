@@ -3,17 +3,22 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from llama_cpp import Llama
+import requests
 import openai
 from openai import OpenAI
 from dotenv import load_dotenv
 import base64
 import os
+from sentence_transformers import SentenceTransformer
+from bs4 import BeautifulSoup
+
 load_dotenv() 
 
 oai_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = oai_key
 client = OpenAI()
 app = FastAPI(title="Streaming Server")
+model_to_train = "gpt-4.1-mini"
 
 # Add CORS middleware
 app.add_middleware(
@@ -38,6 +43,22 @@ class ProcessRequest(BaseModel):
     text: str
     image_base64: str 
     audio_base64: str    
+    
+class PathRequest(BaseModel):
+    curr_loc: str
+    dest: str
+    start: str
+    
+class PathResponse(BaseModel):
+    path: list[str]
+    
+class ContextRequest(BaseModel):
+    url: str
+    
+class ContextResponse(BaseModel):
+    vector_embeddings: list[list[float]]
+    cleaned_info: str
+    title: str
 
 llm = Llama.from_pretrained(
 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
@@ -81,7 +102,7 @@ async def process_media(request: ProcessRequest):
     """
         Takes in mp3, turn to text, and prompt model with something, return result
         takes in text does same thing
-        takes in image as base64 supports image+text+audio with anythign
+        takes in image as base64 supports image+text+audio with anything
     """
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty") 
@@ -103,7 +124,7 @@ async def process_media(request: ProcessRequest):
         inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
 
     response = client.responses.create(
-    model="gpt-4.1-mini",
+    model=model_to_train,
     input=[{
         "role": "user",
         "content": inputs
@@ -116,3 +137,40 @@ def decode_base64_to_mp3(base64_string: str, output_filename: str):
     mp3_bytes = base64.b64decode(base64_string)
     with open(output_filename, "wb") as f:
         f.write(mp3_bytes)
+        
+@app.post("/compute_paths", response_model=ChatResponse)
+async def path_computation(request: PathRequest): 
+    pass
+
+@app.post("/context", response_model=ContextResponse)
+async def get_context_data(request: ContextRequest): 
+    """
+        Given a websites, scrape the data, input into LLM to clean the data, vectorize it, and send the vectors and summary pair
+    """
+    text = scrape_website(request.url)
+    #print(f"[{request.url}] {text}")
+    response =  client.responses.create(
+            model=model_to_train,
+            input=[{
+                "role": "user",
+                "content": f"Clean this content for only relevant information and provide the title {text}. Format it into cleaned_info: and title:"
+                }]
+            )
+    lines = response.output_text.strip().splitlines()
+    cleaned_info = ""
+    title = lines[0][len("title: "):].strip()
+    for line in range(3, len(lines)):
+        cleaned_info = "".join(lines[line])
+        
+    model = SentenceTransformer('sentence-transformers/msmarco-MiniLM-L12-v3')
+    embeddings = model.encode(lines[3: len(lines)])
+    return ContextResponse(vector_embeddings=embeddings.tolist(), cleaned_info=cleaned_info, title=title)
+
+def scrape_website(url: str) -> str:
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    texts = soup.stripped_strings
+    return " ".join(texts)
+
+#get 1000 most important words related to hiking and embbed each word. return json mapping word to embedding

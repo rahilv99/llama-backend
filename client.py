@@ -8,10 +8,7 @@ def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
     
-def test_generate_endpoint():
-    """
-    Test the /generate endpoint of the FastAPI server.
-    """
+def test_process_endpoint():
     img_b64 = encode_image("example.jpg")
     audio_b64 = encode_image("creep.mp3")
 
@@ -30,6 +27,20 @@ def test_generate_endpoint():
             print(f"Error {response.status_code}: {response.json()}")
     except Exception as e:
         print("An error occurred:", str(e))
+        
+def test_context_endpoint():
+    endpoint = f"{BASE_URL}/context"
+    payload = {"url": "https://www.thenightsky.com/blog/identify-stars-for-stargazing"}
 
+    try:
+        response = requests.post(endpoint, json=payload)
+        if response.status_code == 200:
+            print("Response:", response.json())
+        else:
+            print(f"Error {response.status_code}: {response.json()}")
+    except Exception as e:
+        print("An error occurred:", str(e))
+        
 if __name__ == "__main__":
-    test_generate_endpoint()
+    #test_process_endpoint()
+    test_context_endpoint()

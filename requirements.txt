@@ -6,3 +6,5 @@ llama-cpp-python
 huggingface-hub[hf_xet]
 python-dotenv
 openai
+beautifulsoup4
+sentence-transformers
