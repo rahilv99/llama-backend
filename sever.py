@@ -49,3 +49,24 @@ async def generate_response(request: ChatRequest):
         ai_response = out["choices"][0]["message"]["content"]
 
     return ChatResponse(response=ai_response)
+
+@app.post("/process", response_model=ChatResponse)
+class ProcessRequest(BaseModel):
+    prompt: str
+    text: str
+    image_base64: str 
+    mp3_base64: str  
+    
+async def process_media(request: ChatRequest):
+    """
+        Takes in mp3, turn to text, and prompt model with something, return result
+        takes in text does same thing
+        takes in image as base64 supports image+text+audio with anythign
+    """
+    
+    if not request.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+    
+    if request.text.strip() and request.image_base64.strip() and request.mp3_base64.strip():
+        raise HTTPException(status_code=400, detail="Need at least one source of information")
+    
