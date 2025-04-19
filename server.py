@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from llama_cpp import Llama
 from openai import OpenAI
@@ -10,6 +11,15 @@ oai_key = os.getenv("OPENAI_API_KEY")
 OpenAI.api_key = oai_key
 client = OpenAI()
 app = FastAPI(title="Streaming Server")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Update this with your frontend domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 MOCK = False
 
@@ -26,7 +36,7 @@ class ProcessRequest(BaseModel):
     image_base64: str 
     mp3_base64: str  
     
-
+# Load model locally
 llm = Llama.from_pretrained(
 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
 	filename="Llama-3.2-3B-Instruct-Q5_K_S.gguf",
