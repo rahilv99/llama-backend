@@ -4,3 +4,5 @@ venv
 requests
 llama-cpp-python
 huggingface-hub[hf_xet]
+python-dotenv
+openai
