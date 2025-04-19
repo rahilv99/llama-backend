@@ -8,7 +8,7 @@ def test_generate_endpoint():
     Test the /generate endpoint of the FastAPI server.
     """
     endpoint = f"{BASE_URL}/generate"
-    payload = {"prompt": "Hello, AI!"}
+    payload = {"prompt": "What do I do if I touched poison ivy?"}
 
     try:
         response = requests.post(endpoint, json=payload)

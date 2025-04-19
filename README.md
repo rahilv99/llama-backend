@@ -12,3 +12,10 @@
 ## Testing
 Open a new terminal
 Run client.py with `python client.py`
+
+## Model hosting
+1. Run `sudo apt install build-essential gcc-11 g++-11` to install gcc-11 c compiler
+2. Export compiler variables
+`export CC=gcc-11`
+`export CXX=g++-11`
+3. Run `pip install llama-cpp-python`
