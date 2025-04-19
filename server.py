@@ -1,13 +1,16 @@
-from fastapi import FastAPI, HTTPException
+from typing import Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from llama_cpp import Llama
+import openai
 from openai import OpenAI
 from dotenv import load_dotenv
+import base64
 import os
 load_dotenv() 
 
 oai_key = os.getenv("OPENAI_API_KEY")
-OpenAI.api_key = oai_key
+openai.api_key = oai_key
 client = OpenAI()
 app = FastAPI(title="Streaming Server")
 
@@ -24,8 +27,7 @@ class ProcessRequest(BaseModel):
     prompt: str
     text: str
     image_base64: str 
-    mp3_base64: str  
-    
+    audio_base64: str    
 
 llm = Llama.from_pretrained(
 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
@@ -65,22 +67,42 @@ async def generate_response(request: ChatRequest):
     return ChatResponse(response=ai_response)
 
 @app.post("/process", response_model=ChatResponse)
-async def process_media(request: ChatRequest):
+async def process_media(request: ProcessRequest):
     """
         Takes in mp3, turn to text, and prompt model with something, return result
         takes in text does same thing
         takes in image as base64 supports image+text+audio with anythign
     """
-    
     if not request.prompt.strip():
-        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty") 
     
-    if request.text.strip() and request.image_base64.strip() and request.mp3_base64.strip():
+    if not request.text.strip() and not request.image_base64.strip() and request.audio_base64.strip() is None:
         raise HTTPException(status_code=400, detail="Need at least one source of information")
-    
+    inputs = []
+    if request.text:
+        inputs.append({"type": "input_text", "text": f"Here is the context: {request.text}. {request.prompt}" })
+    if request.image_base64:
+        inputs.append({"type": "input_image", "image_url": f"data:image/jpeg;base64,{request.image_base64}", "detail": "low", })
+    if request.audio_base64:
+        filename = "audio.mp3"
+        decode_base64_to_mp3(request.audio_base64, filename)
+        transcriptions = client.audio.transcriptions.create(
+        model="gpt-4o-transcribe",
+        file=open("audio.mp3", "rb"),
+        )
+        inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
+
     response = client.responses.create(
-    model="gpt-4.1",
-    input= request.text
+    model="gpt-4.1-mini",
+    input=[{
+        "role": "user",
+        "content": inputs
+        }]
     )
-    print(response.output_text)
     return ChatResponse(response=response.output_text)
+
+def decode_base64_to_mp3(base64_string: str, output_filename: str):
+    # Step 1: Decode base64 string to bytes
+    mp3_bytes = base64.b64decode(base64_string)
+    with open(output_filename, "wb") as f:
+        f.write(mp3_bytes)
