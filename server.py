@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from llama_cpp import Llama
 import openai
@@ -13,6 +14,15 @@ oai_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = oai_key
 client = OpenAI()
 app = FastAPI(title="Streaming Server")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Update this with your frontend domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 MOCK = False
 
