@@ -1,7 +1,47 @@
 import json
 import sqlite3
+import requests
 import os
 
+BASE_URL = "http://127.0.0.1:8000"
+
+def create_url_embeddings_database(url):
+    endpoint = f"{BASE_URL}/context"
+    payload = {"url": url}
+
+    try:
+        response = requests.post(endpoint, json=payload)
+        if response.status_code == 200:
+            data = response.json()
+            print("Response:", response.json())
+        else:
+            print(f"Error {response.status_code}: {response.json()}")
+    except Exception as e:
+        print("An error occurred:", str(e))
+    conn = sqlite3.connect("embeddings.db")
+    cursor = conn.cursor()  
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS UrlEmbeddings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vector TEXT NOT NULL,
+        cleaned_info TEXT,
+        title TEXT
+    )
+    ''')
+    try:
+        cursor.execute(
+            "INSERT OR REPLACE INTO UrlEmbeddings (vector, cleaned_info, title) VALUES (?, ?, ?)",
+            (json.dumps(data['vector_embeddings'][0]), data['cleaned_info'], data['title'])
+        )
+        
+        # Commit changes and close connection
+        conn.commit()
+        print(f"Successfully added url embedding to embeddings.db")
+    except Exception as e:
+        print(f"Error populating database: {e}")
+    finally:
+        conn.close()
+      
 def create_embeddings_database():
     # Check if word_response.json exists
     if not os.path.exists("word_response.json"):
@@ -54,4 +94,5 @@ def create_embeddings_database():
         conn.close()
 
 if __name__ == "__main__":
-    create_embeddings_database() 
+    #create_embeddings_database() 
+    create_url_embeddings_database("https://koa.com/blog/hiking-tips-and-tricks-how-to-plan-and-prepare-for-a-hike/")

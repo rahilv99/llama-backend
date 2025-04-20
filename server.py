@@ -182,7 +182,6 @@ async def path(request: PathRequest):
     else:
         weather = "unknown"
         temp = "unknown"        
-    print(temp, weather)
         
     prompt = {"type": "input_text", "text": f"I am currently hiking at {location}. I have hiked {request.dist_traveled} miles in {request.days_traveled} days. I have {request.dist_left} miles left. The weather is currently {weather} and the temperature is {temp} celsius. Give suggestions on what to be out to look for based on the location, what I should prepare for the day, how much I should hike the next few days, and other relevant tips for the hike." }
     response = client.responses.create(
