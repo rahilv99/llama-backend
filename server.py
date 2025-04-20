@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from llama_cpp import Llama
+# from llama_cpp import Llama
 import openai
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -39,42 +39,42 @@ class ProcessRequest(BaseModel):
     image_base64: str 
     audio_base64: str    
 
-llm = Llama.from_pretrained(
-	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
-	filename="Llama-3.2-3B-Instruct-Q5_K_S.gguf",
-)
+# llm = Llama.from_pretrained(
+# 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
+# 	filename="Llama-3.2-3B-Instruct-Q5_K_S.gguf",
+# )
 
-@app.post("/generate", response_model=ChatResponse)
-async def generate_response(request: ChatRequest):
-    """
-    Generate a response for the given prompt.
-    """
-    # Placeholder logic for generating a response
-    if not request.prompt.strip():
-        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+# @app.post("/generate", response_model=ChatResponse)
+# async def generate_response(request: ChatRequest):
+#     """
+#     Generate a response for the given prompt.
+#     """
+#     # Placeholder logic for generating a response
+#     if not request.prompt.strip():
+#         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
-    # Example response (replace with actual AI logic)
-    if MOCK:
-        ai_response = f"Echo: {request.prompt}"
-    else:
-        out = llm.create_chat_completion(
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are an AI companion for a user in a remote situation. They may need immeadiate care and assistance. \
-                        Provide useful instruction in a concise format."
-                },
-                {
-                    "role": "user",
-                    "content": request.prompt
-                }
-            ]
-        )
+#     # Example response (replace with actual AI logic)
+#     if MOCK:
+#         ai_response = f"Echo: {request.prompt}"
+#     else:
+#         out = llm.create_chat_completion(
+#             messages = [
+#                 {
+#                     "role": "system",
+#                     "content": "You are an AI companion for a user in a remote situation. They may need immeadiate care and assistance. \
+#                         Provide useful instruction in a concise format."
+#                 },
+#                 {
+#                     "role": "user",
+#                     "content": request.prompt
+#                 }
+#             ]
+#         )
 
-        # Extract the AI's response from the output
-        ai_response = out["choices"][0]["message"]["content"]
+#         # Extract the AI's response from the output
+#         ai_response = out["choices"][0]["message"]["content"]
 
-    return ChatResponse(response=ai_response)
+#     return ChatResponse(response=ai_response)
 
 @app.post("/process", response_model=ChatResponse)
 async def process_media(request: ProcessRequest):
@@ -86,7 +86,7 @@ async def process_media(request: ProcessRequest):
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty") 
     
-    if not request.text.strip() and not request.image_base64.strip() and request.audio_base64.strip() is None:
+    if not request.text.strip() and not request.image_base64.strip() and not (request.audio_base64 and request.audio_base64.strip()):
         raise HTTPException(status_code=400, detail="Need at least one source of information")
     inputs = []
     if request.text:
@@ -94,13 +94,14 @@ async def process_media(request: ProcessRequest):
     if request.image_base64:
         inputs.append({"type": "input_image", "image_url": f"data:image/jpeg;base64,{request.image_base64}", "detail": "low", })
     if request.audio_base64:
-        filename = "audio.mp3"
+        filename = "audio.m4a"
         decode_base64_to_mp3(request.audio_base64, filename)
-        transcriptions = client.audio.transcriptions.create(
-        model="gpt-4o-transcribe",
-        file=open("audio.mp3", "rb"),
-        )
-        inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
+        with open(filename, "rb") as f:
+            transcriptions = client.audio.transcriptions.create(
+                model="gpt-4o-transcribe",
+                file=f,
+            )
+            inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
 
     response = client.responses.create(
     model="gpt-4.1-mini",
@@ -112,7 +113,10 @@ async def process_media(request: ProcessRequest):
     return ChatResponse(response=response.output_text)
 
 def decode_base64_to_mp3(base64_string: str, output_filename: str):
-    # Step 1: Decode base64 string to bytes
-    mp3_bytes = base64.b64decode(base64_string)
+    try:
+        m4a_bytes = base64.b64decode(base64_string)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid base64 audio") from e
+
     with open(output_filename, "wb") as f:
-        f.write(mp3_bytes)
+        f.write(m4a_bytes)
