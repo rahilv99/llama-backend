@@ -85,7 +85,7 @@ async def generate_response(request: ChatRequest):
             messages = [
                 {
                     "role": "system",
-                    "content": "You are an AI companion for a user in a remote situation. They may need immeadiate care and assistance. \
+                    "content": "You are an AI companion for a user in a remote situation. They may need immediate care and assistance. \
                         Provide useful instruction in a concise format."
                 },
                 {
@@ -114,7 +114,7 @@ async def process_media(request: ProcessRequest):
         raise HTTPException(status_code=400, detail="Need at least one source of information")
     inputs = []
     if request.text:
-        inputs.append({"type": "input_text", "text": f"Here is the context: {request.text}. {request.prompt}" })
+        inputs.append({"type": "input_text", "text": f"Here is the context: {request.text}. {request.prompt}. Make sure there are between 3 and 5 steps." })
     if request.image_base64:
         inputs.append({"type": "input_image", "image_url": f"data:image/jpeg;base64,{request.image_base64}", "detail": "low", })
     if request.audio_base64:
@@ -339,7 +339,6 @@ def vectorize_hiking_words():
         json[word] = model.encode(word)
     return WordResponse(vector_embeddings=json)
     
-    
 
 def scrape_website(url: str) -> str:
     response = requests.get(url)
@@ -348,4 +347,3 @@ def scrape_website(url: str) -> str:
     texts = soup.stripped_strings
     return " ".join(texts)
 
-#get 1000 most important words related to hiking and embbed each word. return json mapping word to embedding
