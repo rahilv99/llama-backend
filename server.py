@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -17,7 +17,7 @@ load_dotenv()
 oai_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = oai_key
 client = OpenAI()
-app = FastAPI(title="Streaming Server")
+app = FastAPI(title="Hiking Llama Server")
 model_to_train = "gpt-4.1-mini"
 
 # Add CORS middleware
@@ -59,6 +59,9 @@ class ContextResponse(BaseModel):
     vector_embeddings: list[list[float]]
     cleaned_info: str
     title: str
+
+class WordResponse(BaseModel):
+    vector_embeddings: Dict[str, list[float]]
 
 llm = Llama.from_pretrained(
 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
@@ -165,6 +168,109 @@ async def get_context_data(request: ContextRequest):
     model = SentenceTransformer('sentence-transformers/msmarco-MiniLM-L12-v3')
     embeddings = model.encode(lines[3: len(lines)])
     return ContextResponse(vector_embeddings=embeddings.tolist(), cleaned_info=cleaned_info, title=title)
+
+@app.post("/context/words", response_model=WordResponse)
+def vectorize_hiking_words():
+    hiking_words = [
+    "trail", "backpack", "boots", "summit", "peak", "ridge", "campsite", "tent",
+    "compass", "map", "navigation", "trek", "expedition", "journey", "ascent",
+    "descent", "altitude", "elevation", "path", "route", "waypoint", "landmark",
+    "wilderness", "forest", "mountain", "hill", "valley", "creek", "river",
+    "lake", "pond", "meadow", "glacier", "snowfield", "scree", "boulder",
+    "rock", "canyon", "gorge", "waterfall", "stream", "bridge", "crossing",
+    "switchback", "overlook", "vista", "scenic", "panorama", "binoculars",
+    "daypack", "hydration", "canteen", "flask", "headlamp", "flashlight",
+    "sunscreen", "bugspray", "trekking", "poles", "gaiters", "windbreaker",
+    "raincoat", "poncho", "firstaid", "bandage", "blister", "carabiner",
+    "harness", "helmet", "rope", "anchor", "belay", "scramble", "climb",
+    "abseil", "rappel", "firestarter", "matches", "lighter", "knife",
+    "multitool", "whistle", "beacon", "locator", "signal", "rescue",
+    "survival", "shelter", "emergency", "trailhead", "parkinglot", "permit",
+    "pass", "registration", "ranger", "station", "signpost", "marker",
+    "blaze", "loop", "outandback", "thruhike", "sectionhike", "backcountry",
+    "wildernessarea", "nationalpark", "statepark", "reserve", "conservation",
+    "wildlife", "bear", "moose", "deer", "elk", "coyote", "fox", "mountainlion",
+    "snake", "lizard", "eagle", "hawk", "owl", "birdwatching", "flora",
+    "fauna", "wildflowers", "moss", "lichen", "fungi", "mushroom",
+    "roots", "branches", "canopy", "underbrush", "thicket", "clearing",
+    "trailmix", "granola", "energybar", "snack", "meal", "freeze-dried",
+    "ration", "cookset", "stove", "fuel", "wood", "campfire", "firepit",
+    "latrine", "outhouse", "wastebag", "leave-no-trace", "packout",
+    "gear", "equipment", "supplies", "layers", "base-layer", "insulation",
+    "outer-layer", "gloves", "beanie", "hat", "sunglasses", "buff",
+    "scarf", "gaiter", "fleece", "downjacket", "softshell", "hardshell",
+    "scrambling", "ridgewalk", "forestbath", "mossyrocks", "sunrisehike",
+    "sunsetview", "trailrunner", "alpinezone", "barrenlands", "crag",
+    "bushwhack", "lichenfield", "hiddenfalls", "shadygrove", "stonearch",
+    "treecanopy", "ridgecrest", "meanderingpath", "steeppass",
+    "coldcreek", "serenepond", "lonetree", "wildmeadow", "boulderdash",
+    "barefoottrail", "pinegrove", "whisperingpines", "shiftingweather",
+    "howlingwind", "snowdrift", "crunchingleaves", "leaflitter",
+    "fallenlogs", "animaltrack", "rockscramble", "frostflowers",
+    "dewypath", "foggytrail", "overgrownpath", "hiddenlake",
+    "majesticfalls", "basin", "bouldergarden", "wildernesszone",
+    "windsweptpeak", "icyledge", "wildberries", "beartracks",
+    "gamepath", "shelteredcove", "dustytrail", "ridgecamp",
+    "trailjunction", "mistyforest", "undergrowth", "shiftingterrain",
+    "snowcaps", "glacierfield", "sheercliff", "narrowledge",
+    "fernvalley", "wildorchid", "stonybrook", "slipperyrock",
+    "meadowlark", "hummingbird", "trailcompanion", "windchill",
+    "rockyplateau", "pinetrail", "valleyview", "brushfield",
+    "coldspring", "hikeleader", "backpackstrap", "waterstop",
+    "campsitereview", "switchbackturn", "stormcloud", "breezepass",
+    "summitsign", "woodenbridge", "grassyknoll", "wildtrail",
+    "hiddenmeadow", "stonytrail", "logbridge", "trailcrossing",
+    "snowypath", "dustyclimb", "frostedridge", "icepatch",
+    "ravinepass", "floodedpath", "trailgap", "wanderingtrail",
+    "sunbeams", "cracklingfire", "quietgrove", "mountaindawn",
+    "eveningtrek", "earlystart", "packlist", "supplycache",
+    "riverford", "nightcamp", "noontimebreak", "hightrail",
+    "rockledge", "woodlandpath", "twistingtrail", "ravinewalk",
+    "creekbed", "breezymeadow", "hikerslog", "gearcheck",
+    "treelinecamp", "ridgecampfire", "fogbank", "wildcamp",
+    "rockfield", "elevationgain", "stonepath", "marshcrossing",
+    "beaverdam", "coldfront", "windstorm", "silentvalley",
+    "boulderfield", "wildshelter", "thickbush", "snowmelt",
+    "rockhopping", "wildtrailhead", "earlymist", "streamcrossing",
+    "highdeserthike", "crestsummit", "rockterrace", "fastpack",
+    "lightpacking", "trailbuddy", "muddyboots", "puddlejump",
+    "hiddenfalls", "cragview", "overlookpoint", "highpass",
+    "ridgeview", "thundermountain", "snowyforest", "stonefootpath",
+    "mountainpath", "craggytrail", "openmeadow", "alpinecamp",
+    "sunsetpeak", "lowlandtrail", "nighttrek", "forestedge",
+    "pinefield", "glacierpeak", "deertrail", "hiddenoverlook",
+    "snowbank", "peakbagger", "stormytrail", "rockface", "hilltop",
+    "mistyhike", "starrynights", "rivertrail", "desertwalk",
+    "woodensteps", "trailridge", "thickmist", "summitpush",
+    "overgrowntrail", "quietstream", "ridgeoverlook", "canyonwalk",
+    "trailheadsign", "sunrisepeak", "moondance", "glacialmelt",
+    "campkitchen", "rockoverhang", "forestpath", "baretrail",
+    "tallgrass", "wildridges", "birdcalls", "dawncamp", "thickforest",
+    "icytrail", "shadedvalley", "summitcamp", "weatherwatch",
+    "stormwatch", "nightwatch", "earlylight", "sunshinehike",
+    "pinemist", "shelteredcamp", "meadowhike", "fastascent",
+    "longtrail", "granitepeak", "breezyridge", "fogline",
+    "nightfallhike", "ridgewalkway", "adventuretrail", "crossingstream",
+    "narrowtrail", "loosegravel", "wildvista", "trailcross", "ridgeescape",
+    "shadycamp", "latecamp", "firstlight", "highcamp", "lowcamp",
+    "basinhike", "desertpath", "coolshade", "packadjust", "shoerelace",
+    "blusterywind", "wildstep", "craggyridge", "snowyhill", "moonlittrail",
+    "eveningcamp", "fadinglight", "riverbend", "edgeofthewoods",
+    "nightpack", "packhaul", "ridgeascent", "eaglesoar", "streamtrail",
+    "glacialpath", "icebridge", "logcrossing", "trailgapjump",
+    "rockscrambler", "graveltrail", "foresthike", "eveningfog",
+    "brighttrail", "crispair", "firstsnow", "autumnhike", "springtrail",
+    "drytrail", "dustyfield", "openridge", "creekcrossing",
+    "survivalskills", "knottying", "signalbuilding",
+    "distressignals", "emergencypreparedness"
+    ]
+    model = SentenceTransformer('sentence-transformers/msmarco-MiniLM-L12-v3')
+    json = {}
+    for word in hiking_words:
+        json[word] = model.encode(word)
+    return WordResponse(vector_embeddings=json)
+    
+    
 
 def scrape_website(url: str) -> str:
     response = requests.get(url)

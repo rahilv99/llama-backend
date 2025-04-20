@@ -1,10 +1,18 @@
-fastapi
-pydantic
-venv
-requests
-llama-cpp-python
-huggingface-hub[hf_xet]
-python-dotenv
-openai
-beautifulsoup4
-sentence-transformers
+# fastapi
+# pydantic
+# venv
+# requests
+# llama-cpp-python
+# python-dotenv
+# openai
+# beautifulsoup4
+# sentence-transformers
+fastapi>=0.110,<1.0
+pydantic>=2.0,<3.0
+requests>=2.28
+llama-cpp-python>=0.2.0
+huggingface-hub[hf_xet]>=0.21.0
+python-dotenv>=1.0.0
+openai>=1.0.0
+beautifulsoup4>=4.12.0
+sentence-transformers>=2.2.2

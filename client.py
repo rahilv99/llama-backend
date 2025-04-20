@@ -41,6 +41,19 @@ def test_context_endpoint():
     except Exception as e:
         print("An error occurred:", str(e))
         
+def test_word_endpoint():
+    endpoint = f"{BASE_URL}/context/words"
+    payload = {}
+    try:
+        response = requests.post(endpoint, json=payload)
+        if response.status_code == 200:
+            print("Response:", response.json())
+        else:
+            print(f"Error {response.status_code}: {response.json()}")
+    except Exception as e:
+        print("An error occurred:", str(e))
+
 if __name__ == "__main__":
     #test_process_endpoint()
-    test_context_endpoint()
+    #test_context_endpoint()
+    test_word_endpoint()
