@@ -208,8 +208,6 @@ async def path(request: PathRequest):
                     "additionalProperties": False
                 },
                 "strict": True,
-                #summary
-                #array of strings for steps on what to do
             }
         }
     )
