@@ -9,14 +9,14 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
     
 def test_process_endpoint():
-    img_b64 = encode_image("example.jpg")
-    audio_b64 = encode_image("creep.mp3")
+    img_b64 = encode_image("rash.jpg")
+    #audio_b64 = encode_image("creep.mp3")
 
     endpoint = f"{BASE_URL}/process"
     payload = {"prompt": "give a solution to the problems given the text, image, and audio",
                "text": "I have a huge rash on my forearm and my skin is turning orange",
                "image_base64": img_b64,
-               "audio_base64": audio_b64
+               "audio_base64": ""
                }
 
     try:
@@ -54,6 +54,6 @@ def test_word_endpoint():
         print("An error occurred:", str(e))
 
 if __name__ == "__main__":
-    #test_process_endpoint()
+    test_process_endpoint()
     #test_context_endpoint()
-    test_word_endpoint()
+    #test_word_endpoint()

@@ -132,7 +132,28 @@ async def process_media(request: ProcessRequest):
     input=[{
         "role": "user",
         "content": inputs
-        }]
+        }],
+    text={
+            "format": {
+                "type": "json_schema",
+                "name": "steps-to-survive",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "steps": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["summary", "steps"],
+                    "additionalProperties": False
+                },
+                "strict": True,
+                #summary
+                #array of strings for steps on what to do
+            }
+        }
     )
     return ChatResponse(response=response.output_text)
 
