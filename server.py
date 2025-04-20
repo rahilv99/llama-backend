@@ -11,14 +11,15 @@ import base64
 import os
 from sentence_transformers import SentenceTransformer
 from bs4 import BeautifulSoup
+from geopy.geocoders import Nominatim
 
 load_dotenv() 
 
 oai_key = os.getenv("OPENAI_API_KEY")
-openai.api_key = oai_key
 client = OpenAI()
 app = FastAPI(title="Hiking Llama Server")
 model_to_train = "gpt-4.1-mini"
+openai.api_key = oai_key
 
 # Add CORS middleware
 app.add_middleware(
@@ -45,12 +46,11 @@ class ProcessRequest(BaseModel):
     audio_base64: str    
     
 class PathRequest(BaseModel):
-    curr_loc: str
-    dest: str
-    start: str
-    
-class PathResponse(BaseModel):
-    path: list[str]
+    dist_traveled: str
+    dist_left: str
+    days_traveled: str
+    longitude: str
+    latitude: str
     
 class ContextRequest(BaseModel):
     url: str
@@ -128,7 +128,7 @@ async def process_media(request: ProcessRequest):
             inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
 
     response = client.responses.create(
-    model="gpt-4.1-mini",
+    model=model_to_train,
     input=[{
         "role": "user",
         "content": inputs
@@ -166,9 +166,55 @@ def decode_base64_to_mp3(base64_string: str, output_filename: str):
     with open(output_filename, "wb") as f:
         f.write(m4a_bytes)
         
-@app.post("/compute_paths", response_model=ChatResponse)
-async def path_computation(request: PathRequest): 
-    pass
+@app.post("/path", response_model=ChatResponse)
+async def path(request: PathRequest):
+    geo = Nominatim(user_agent="geocoding_app")
+    coords = f"{request.latitude}, {request.longitude}"
+    location = geo.reverse(coords)
+    
+    
+    url = f"https://wttr.in/{request.latitude},{request.longitude}?format=j1"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()['current_condition'][0]
+        temp = data["temp_C"]
+        weather = data["weatherDesc"][0]["value"]
+    else:
+        weather = "unknown"
+        temp = "unknown"        
+    print(temp, weather)
+        
+    prompt = {"type": "input_text", "text": f"I am currently hiking at {location}. I have hiked {request.dist_traveled} miles in {request.days_traveled} days. I have {request.dist_left} miles left. The weather is currently {weather} and the temperature is {temp} celsius. Give suggestions on what to be out to look for based on the location, what I should prepare for the day, how much I should hike the next few days, and other relevant tips for the hike." }
+    response = client.responses.create(
+    model=model_to_train,
+    input=[{
+        "role": "user",
+        "content": [prompt]
+        }],
+    text={
+            "format": {
+                "type": "json_schema",
+                "name": "path-estimation",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "tips": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["summary", "tips"],
+                    "additionalProperties": False
+                },
+                "strict": True,
+                #summary
+                #array of strings for steps on what to do
+            }
+        }
+    )
+    return ChatResponse(response=response.output_text)
+
 
 @app.post("/context", response_model=ContextResponse)
 async def get_context_data(request: ContextRequest): 

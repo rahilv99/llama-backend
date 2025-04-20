@@ -29,6 +29,24 @@ def test_process_endpoint():
     except Exception as e:
         print("An error occurred:", str(e))
         
+def test_path_endpoint():
+    endpoint = f"{BASE_URL}/path"
+    payload = {
+        "dist_traveled": "10 miles",
+        "dist_left": "30 miles",
+        "days_traveled": "1",
+        "latitude": "45.8326",
+        "longitude": "6.8652"
+    }
+    try:
+        response = requests.post(endpoint, json=payload)
+        if response.status_code == 200:
+            print("Response:", response.json())
+        else:
+            print(f"Error {response.status_code}: {response.json()}")
+    except Exception as e:
+        print("An error occurred:", str(e))
+
 def test_context_endpoint():
     endpoint = f"{BASE_URL}/context"
     payload = {"url": "https://www.thenightsky.com/blog/identify-stars-for-stargazing"}
@@ -58,6 +76,7 @@ def test_word_endpoint():
         print("An error occurred:", str(e))
 
 if __name__ == "__main__":
-    test_process_endpoint()
+    #test_process_endpoint()
     #test_context_endpoint()
     #test_word_endpoint()
+    test_path_endpoint()
