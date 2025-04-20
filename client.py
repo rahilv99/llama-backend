@@ -1,5 +1,6 @@
 import requests
 import base64
+import json
 
 # URL of the FastAPI server
 BASE_URL = "http://127.0.0.1:8000"
@@ -47,7 +48,10 @@ def test_word_endpoint():
     try:
         response = requests.post(endpoint, json=payload)
         if response.status_code == 200:
-            print("Response:", response.json())
+            # Write response to a JSON file
+            with open("word_response.json", "w") as file:
+                json.dump(response.json(), file, indent=4)
+            print("Response saved to word_response.json")
         else:
             print(f"Error {response.status_code}: {response.json()}")
     except Exception as e:
