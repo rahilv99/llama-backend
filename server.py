@@ -15,11 +15,11 @@ from geopy.geocoders import Nominatim
 
 load_dotenv() 
 
-oai_key = os.getenv("OPENAI_API_KEY")
+llm_key = os.getenv("LLM_KEY")
 client = OpenAI()
 app = FastAPI(title="Hiking Llama Server")
 model_to_train = "gpt-4.1-mini"
-openai.api_key = oai_key
+openai.api_key = llm_key
 
 # Add CORS middleware
 app.add_middleware(
