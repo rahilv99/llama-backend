@@ -2,12 +2,8 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-<<<<<<< HEAD
-# from llama_cpp import Llama
-=======
 from llama_cpp import Llama
 import requests
->>>>>>> 0663f4cb017f8007a2c5897ea87d8647a80c1019
 import openai
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -64,42 +60,42 @@ class ContextResponse(BaseModel):
     cleaned_info: str
     title: str
 
-# llm = Llama.from_pretrained(
-# 	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
-# 	filename="Llama-3.2-3B-Instruct-Q5_K_S.gguf",
-# )
+llm = Llama.from_pretrained(
+	repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
+	filename="Llama-3.2-3B-Instruct-Q5_K_S.gguf",
+)
 
-# @app.post("/generate", response_model=ChatResponse)
-# async def generate_response(request: ChatRequest):
-#     """
-#     Generate a response for the given prompt.
-#     """
-#     # Placeholder logic for generating a response
-#     if not request.prompt.strip():
-#         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+@app.post("/generate", response_model=ChatResponse)
+async def generate_response(request: ChatRequest):
+    """
+    Generate a response for the given prompt.
+    """
+    # Placeholder logic for generating a response
+    if not request.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
-#     # Example response (replace with actual AI logic)
-#     if MOCK:
-#         ai_response = f"Echo: {request.prompt}"
-#     else:
-#         out = llm.create_chat_completion(
-#             messages = [
-#                 {
-#                     "role": "system",
-#                     "content": "You are an AI companion for a user in a remote situation. They may need immeadiate care and assistance. \
-#                         Provide useful instruction in a concise format."
-#                 },
-#                 {
-#                     "role": "user",
-#                     "content": request.prompt
-#                 }
-#             ]
-#         )
+    # Example response (replace with actual AI logic)
+    if MOCK:
+        ai_response = f"Echo: {request.prompt}"
+    else:
+        out = llm.create_chat_completion(
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an AI companion for a user in a remote situation. They may need immeadiate care and assistance. \
+                        Provide useful instruction in a concise format."
+                },
+                {
+                    "role": "user",
+                    "content": request.prompt
+                }
+            ]
+        )
 
-#         # Extract the AI's response from the output
-#         ai_response = out["choices"][0]["message"]["content"]
+        # Extract the AI's response from the output
+        ai_response = out["choices"][0]["message"]["content"]
 
-#     return ChatResponse(response=ai_response)
+    return ChatResponse(response=ai_response)
 
 @app.post("/process", response_model=ChatResponse)
 async def process_media(request: ProcessRequest):
@@ -129,7 +125,7 @@ async def process_media(request: ProcessRequest):
             inputs.append({"type": "input_text", "text": f"This is a transcript of an audio file {transcriptions}" })
 
     response = client.responses.create(
-    model=model_to_train,
+    model="gpt-4.1-mini",
     input=[{
         "role": "user",
         "content": inputs
@@ -144,10 +140,7 @@ def decode_base64_to_mp3(base64_string: str, output_filename: str):
         raise HTTPException(status_code=400, detail="Invalid base64 audio") from e
 
     with open(output_filename, "wb") as f:
-<<<<<<< HEAD
         f.write(m4a_bytes)
-=======
-        f.write(mp3_bytes)
         
 @app.post("/compute_paths", response_model=ChatResponse)
 async def path_computation(request: PathRequest): 
@@ -185,4 +178,3 @@ def scrape_website(url: str) -> str:
     return " ".join(texts)
 
 #get 1000 most important words related to hiking and embbed each word. return json mapping word to embedding
->>>>>>> 0663f4cb017f8007a2c5897ea87d8647a80c1019
